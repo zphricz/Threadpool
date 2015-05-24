@@ -35,6 +35,7 @@ class Threadpool {
     start_threads();
   }
 
+  Threadpool(Threadpool& other) = delete;
   Threadpool(const Threadpool& other) = delete;
   Threadpool(Threadpool&& other) = delete;
 
@@ -67,26 +68,20 @@ class Threadpool {
   std::future<typename std::result_of<F(Args...)>::type>
   submit_job(F&& f, Args&&... args) {
     typedef typename std::result_of<F(Args...)>::type R;
-    return submit_helper((std::function<R()>)std::bind(f, args...));
+    return submit_helper(std::function<R()>(std::bind(std::forward<F>(f),
+                                                      std::forward<Args>(args)...)));
   }
 
   template<typename F>
   std::future<typename std::result_of<F()>::type>
   submit_job(F&& f) {
     typedef typename std::result_of<F()>::type R;
-    return submit_helper((std::function<R()>)f);
+    return submit_helper(std::function<R()>(std::forward<F>(f)));
   }
-
-#if 0
-  // My attempt at getting reference arguments handled correctly. Ignore for
-  // now
-  template<typename F, typename... Args>
-  void submit_job(F&& f, Args&... args) = delete;
-#endif
 
   void wait_for_all_jobs() {
     std::unique_lock<std::mutex> lk(m);
-    signal_main.wait(lk, [&]{
+    signal_main.wait(lk, [&] {
       return job_queue.empty() && running_threads == 0;
     });
   }
@@ -125,7 +120,7 @@ class Threadpool {
 
   void start_threads() {
     for (int i = 0; i < num_threads; i++) {
-      threads.push_back(std::thread(&Threadpool::thread_loop, this));
+      threads.emplace_back(&Threadpool::thread_loop, this);
     }
   }
 

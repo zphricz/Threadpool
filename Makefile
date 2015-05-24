@@ -1,16 +1,16 @@
 CXXFLAGS = -std=c++11 -Ofast -Wall -Werror
 OS = $(shell uname -s)
 SRC = $(wildcard *.cpp)
-OBJECTS = $(patsubst %.cpp, objs/%.o, $(SRC))
-HEADERS = $(patsubst %.cpp, %.h, $(SRC))
-DEPS = $(patsubst %.cpp, objs/%.d, $(SRC))
+HEADERS = $(wildcard *.cpp)
+OBJECTS = $(patsubst %.cpp, $(OBJDIR)/%.o, $(SRC))
+DEPS = $(patsubst %.cpp, $(OBJDIR)/%.d, $(SRC))
+OBJDIR = objs
 ELFNAME = threadpool_test
 
 ifeq ($(OS), Darwin)
 	CXX = clang++
 endif
 ifeq ($(OS), Linux)
-  CXXFLAGS+= -Wl,--no-as-needed
 	CXX = g++
 	LDFLAGS = -lpthread
 endif
@@ -20,15 +20,15 @@ all: $(ELFNAME)
 $(ELFNAME): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -o$@ $^ $(LDFLAGS) 
 
-objs/%.o: %.cpp objs
+$(OBJDIR)/%.o: %.cpp $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c -MMD -MP $< -o $@
 
-objs:
-	    mkdir -p objs
+$(OBJDIR):
+	    mkdir -p $(OBJDIR)
 
 -include $(DEPS)
 
 clean:
-	rm -f objs/*.o
-	rm -f objs/*.d
+	rm -f $(OBJDIR)/*.o
+	rm -f $(OBJDIR)/*.d
 	rm -f $(ELFNAME)
