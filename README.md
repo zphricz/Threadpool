@@ -1,8 +1,6 @@
 # Threadpool
 A simple threadpool implemented in c++
 
-# Examples
-
 ## Creating a threadpool
 
 To create a threadpool with as many threads as your system can handle:
