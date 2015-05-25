@@ -1,5 +1,5 @@
-#ifndef THREADPOOL_H
-#define THREADPOOL_H
+#ifndef SINGLETON_THREADPOOL_H
+#define SINGLETON_THREADPOOL_H
 
 #include <deque>
 #include <thread>
@@ -20,25 +20,12 @@
  *   - Implement Threadpool singleton pattern?
  */
 class Threadpool {
-  public:
-  explicit Threadpool()
-    : running(true), num_threads(recommend_threadcount()) {
-    running_threads = num_threads;
-    start_threads();
-  }
 
-  explicit Threadpool(int num_threads)
-    : running(true), num_threads(num_threads) {
-    if (num_threads <= 0) {
-      num_threads = 1;
-    }
-    running_threads = num_threads;
-    start_threads();
+public:
+  static Threadpool& instance_of() {
+      static Threadpool instance;
+      return instance;
   }
-
-  Threadpool(Threadpool &other) = delete;
-  Threadpool(const Threadpool &other) = delete;
-  Threadpool(Threadpool &&other) = delete;
 
   // The destructor will cancel any remaining jobs. Make sure to call
   // wait_for_all_jobs() before letting the destructor execute
@@ -59,10 +46,6 @@ class Threadpool {
     for (auto &thread : threads) {
       thread.detach();
     }
-  }
-
-  static int recommend_threadcount() {
-    return std::thread::hardware_concurrency();
   }
 
   // Use submit_task() for tasks that need as little overhead as possible
@@ -114,7 +97,32 @@ class Threadpool {
     return job_queue.empty() && running_threads == 0;
   }
 
+  void start_threadpool() {
+    running = true;
+    running_threads = num_threads;
+    for (int i = 0; i < num_threads; i++) {
+      threads.emplace_back(&Threadpool::thread_loop, this);
+    }
+  }
+
+  void set_num_threads(int nthreads) {
+    if (!running) {
+      if (nthreads <= 0) {
+        num_threads = 1;
+      } else {
+        num_threads = nthreads;
+      }
+    }
+  }
+
   private:
+  explicit Threadpool() : num_threads(std::thread::hardware_concurrency()) {
+  }
+
+  Threadpool(Threadpool &other) = delete;
+  Threadpool(const Threadpool &other) = delete;
+  Threadpool(Threadpool &&other) = delete;
+ 
   template <typename R>
   std::future<R> submit_helper(std::function<R()> &&func) {
     auto p = std::make_shared<std::promise<R>>();
@@ -137,12 +145,6 @@ class Threadpool {
     }
     signal_threads.notify_one();
     return p->get_future();
-  }
-
-  void start_threads() {
-    for (int i = 0; i < num_threads; i++) {
-      threads.emplace_back(&Threadpool::thread_loop, this);
-    }
   }
 
   void thread_loop() {
@@ -174,9 +176,58 @@ class Threadpool {
   std::condition_variable signal_threads; // Used to wake up threads
   std::condition_variable signal_main;  // Used to wake up main
   std::vector<std::thread> threads;
-
-  public:
-  const int num_threads; // Number of threads running in this Threadpool
+  int num_threads; // Number of threads running in this Threadpool
 };
 
-#endif // THREADPOOL_H
+void start_threadpool() {
+  Threadpool::instance_of().start_threadpool();
+}
+
+int recommend_threadcount() {
+  return std::thread::hardware_concurrency();
+}
+
+void detach_threads() {
+  Threadpool::instance_of().detach_threads();
+}
+
+// Use submit_task() for tasks that need as little overhead as possible
+template <typename F, typename... Args>
+void submit_task(F &&f, Args &&... args) {
+  Threadpool::instance_of().submit_task(std::forward<F>(f),
+                                        std::forward<Args>(args)...);
+}
+
+template <typename F>
+void submit_task(F &&f) {
+  Threadpool::instance_of().submit_task(std::forward<F>(f));
+}
+
+// submit_contract() has more overhead than submit_task(), but also provides
+// a future as a return
+template <typename F, typename... Args>
+std::future<typename std::result_of<F(Args...)>::type>
+submit_contract(F &&f, Args &&... args) {
+  return Threadpool::instance_of().submit_contract(std::forward<F>(f),
+                                                   std::forward<Args>(args)...);
+}
+
+template <typename F>
+std::future<typename std::result_of<F()>::type>
+submit_contract(F &&f) {
+  return Threadpool::instance_of().submit_contract(std::forward<F>(f));
+}
+
+void wait_for_all_jobs() {
+  Threadpool::instance_of().wait_for_all_jobs();
+}
+
+bool all_jobs_complete() {
+  return Threadpool::instance_of().all_jobs_complete();
+}
+
+void set_num_threads(int nthreads) {
+  Threadpool::instance_of().set_num_threads(nthreads);
+}
+
+#endif 
