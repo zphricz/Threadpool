@@ -12,7 +12,7 @@ ifeq ($(OS), Darwin)
 endif
 ifeq ($(OS), Linux)
 	CXX = g++
-	LDFLAGS = -lpthread
+	LDFLAGS += -Wl,--no-as-needed -lpthread
 endif
 
 all: $(ELFNAME)

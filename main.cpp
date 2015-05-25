@@ -2,6 +2,7 @@
 #include <chrono>
 #include <atomic>
 #include <vector>
+#include <utility>
 
 #include "Threadpool.h"
 
@@ -38,13 +39,20 @@ class Tester {
 
     void test() {
       for (int i = 0; i < 100000; ++i) {
-        tp.submit_job(&Tester::run_once, this);
+        tp.submit_task(&Tester::run_once, this);
       }
     }
 };
 
 int add_tester(int i, int j) {
   return i + j;
+}
+
+template <typename T>
+void swap2(T& a, T& b) {
+  T temp = a;
+  a = b;
+  b = temp;
 }
 
 void my_swap(int& a, int& b) {
@@ -73,8 +81,7 @@ int main() {
   Threadpool tp(4);
 #if 1
   {
-    auto f1 = tp.submit_job(add_tester, 54, 12);
-    sleep(1);
+    auto f1 = tp.submit_contract(add_tester, 54, 12);
     cout << f1.get() << endl;
   }
 #endif
@@ -85,7 +92,7 @@ int main() {
       int a = 0;
       int b = 5;
       cout << "BEFORE: a = " << a << ", b = " << b << endl;
-      auto f = tp.submit_job(my_swap, std::ref(a), std::ref(b));
+      auto f = tp.submit_contract(my_swap, std::ref(a), std::ref(b));
       f.get();
       cout << "AFTER: a = " << a << ", b = " << b << endl;
     }
@@ -94,7 +101,7 @@ int main() {
       int a = 0;
       int b = 5;
       cout << "BEFORE: a = " << a << ", b = " << b << endl;
-      auto f = tp.submit_job(my_bad_swap, a, b);
+      auto f = tp.submit_contract(my_bad_swap, a, b);
       f.get();
       cout << "AFTER: a = " << a << ", b = " << b << endl;
     }
@@ -109,7 +116,7 @@ int main() {
   long k = 0;
   vector<future<vector<int>>> futures;
   for (int i = 1; i < lim; ++i) {
-    futures.push_back(tp.submit_job(vec_func, i));
+    futures.push_back(tp.submit_contract(vec_func, i));
   }
   for (auto& f: futures) {
     auto v = f.get();
@@ -126,7 +133,7 @@ int main() {
 
 #if 1
   for (int i = 0; i < 100000; ++i) {
-    tp.submit_job(hello);
+    tp.submit_task(hello);
   }
   tp.wait_for_all_jobs();
 
@@ -135,7 +142,7 @@ int main() {
 
   for (int i = 0; i < 1000; ++i) {
     for (int j = 0; j < 1000; ++j) {
-      auto t = tp.submit_job(add_tester, i, j);
+      auto t = tp.submit_contract(add_tester, i, j);
     }
   }
   tp.wait_for_all_jobs();
