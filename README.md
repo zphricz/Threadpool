@@ -27,7 +27,6 @@ To create a threadpool and specify the number of threads to run:
         std::cout << s1 << " " << i << " " << s3 << std::endl;
     }
     ...
-    Threadpool tp;
     tp.submit_task(print_arguments, "Hello", 42, "world");
     tp.wait_for_all_jobs();
 
@@ -37,7 +36,6 @@ To create a threadpool and specify the number of threads to run:
         return a + b;
     }
     ...
-    Threadpool tp;
     auto f = tp.submit_contract(add_two, 10, 5);
     assert(f.get() == 15);
     
