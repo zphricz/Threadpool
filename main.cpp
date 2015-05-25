@@ -29,9 +29,7 @@ class Tester {
   }
 
   public:
-    Tester() :
-      tp(4) {
-    }
+    Tester() { }
 
     ~Tester() {
       tp.wait_for_all_jobs();
@@ -78,7 +76,7 @@ vector<int> vec_func(int lim) {
 }
 
 int main() {
-  Threadpool tp(4);
+  Threadpool tp;
 #if 1
   {
     auto f1 = tp.submit_contract(add_tester, 54, 12);
@@ -146,5 +144,19 @@ int main() {
     }
   }
   tp.wait_for_all_jobs();
+#endif
+
+#if 1
+  for (int i = 0; i < 100000; ++i) {
+    submit_task(hello);
+  }
+  wait_for_all_jobs();
+
+  for (int i = 0; i < 1000; ++i) {
+    for (int j = 0; j < 1000; ++j) {
+      auto t = submit_contract(add_tester, i, j);
+    }
+  }
+  wait_for_all_jobs();
 #endif
 }

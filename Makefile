@@ -1,11 +1,11 @@
 CXXFLAGS = -std=c++11 -Ofast -Wall -Werror
 OS = $(shell uname -s)
 SRC = $(wildcard *.cpp)
-HEADERS = $(wildcard *.cpp)
+HEADERS = $(wildcard *.h)
 OBJECTS = $(patsubst %.cpp, $(OBJDIR)/%.o, $(SRC))
 DEPS = $(patsubst %.cpp, $(OBJDIR)/%.d, $(SRC))
 OBJDIR = objs
-ELFNAME = threadpool_test
+ELFNAME = test_threadpool
 
 ifeq ($(OS), Darwin)
 	CXX = clang++

@@ -9,6 +9,12 @@
 #include <functional>
 #include <future>
 
+#include "Singleton.h"
+
+int recommend_threadcount() {
+  return std::thread::hardware_concurrency();
+}
+
 /*
  * TODO:
  *   - If you submit a job that expects a reference argument (e.g. void f(int&))
@@ -39,7 +45,7 @@ class Threadpool {
   Threadpool(Threadpool &other) = delete;
   Threadpool(const Threadpool &other) = delete;
   Threadpool(Threadpool &&other) = delete;
-
+ 
   // The destructor will cancel any remaining jobs. Make sure to call
   // wait_for_all_jobs() before letting the destructor execute
   ~Threadpool() {
@@ -59,10 +65,6 @@ class Threadpool {
     for (auto &thread : threads) {
       thread.detach();
     }
-  }
-
-  static int recommend_threadcount() {
-    return std::thread::hardware_concurrency();
   }
 
   // Use submit_task() for tasks that need as little overhead as possible
@@ -179,4 +181,43 @@ class Threadpool {
   const int num_threads; // Number of threads running in this Threadpool
 };
 
-#endif // THREADPOOL_H
+void detach_threads() {
+  Singleton<Threadpool>::instance().detach_threads();
+}
+
+// Use submit_task() for tasks that need as little overhead as possible
+template <typename F, typename... Args>
+void submit_task(F &&f, Args &&... args) {
+  Singleton<Threadpool>::instance().submit_task(std::forward<F>(f),
+                                                std::forward<Args>(args)...);
+}
+
+template <typename F>
+void submit_task(F &&f) {
+  Singleton<Threadpool>::instance().submit_task(std::forward<F>(f));
+}
+
+// submit_contract() has more overhead than submit_task(), but also provides
+// a future as a return
+template <typename F, typename... Args>
+std::future<typename std::result_of<F(Args...)>::type>
+submit_contract(F &&f, Args &&... args) {
+  return Singleton<Threadpool>::instance().submit_contract(std::forward<F>(f),
+                                                   std::forward<Args>(args)...);
+}
+
+template <typename F>
+std::future<typename std::result_of<F()>::type>
+submit_contract(F &&f) {
+  return Singleton<Threadpool>::instance().submit_contract(std::forward<F>(f));
+}
+
+void wait_for_all_jobs() {
+  Singleton<Threadpool>::instance().wait_for_all_jobs();
+}
+
+bool all_jobs_complete() {
+  return Singleton<Threadpool>::instance().all_jobs_complete();
+}
+
+#endif 
