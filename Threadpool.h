@@ -11,10 +11,6 @@
 
 #include "Singleton.h"
 
-int recommend_threadcount() {
-  return std::thread::hardware_concurrency();
-}
-
 /*
  * TODO:
  *   - If you submit a job that expects a reference argument (e.g. void f(int&))
@@ -28,7 +24,7 @@ int recommend_threadcount() {
 class Threadpool {
   public:
   explicit Threadpool()
-    : running(true), num_threads(recommend_threadcount()) {
+    : running(true), num_threads(std::thread::hardware_concurrency()) {
     running_threads = num_threads;
     start_threads();
   }
@@ -58,12 +54,6 @@ class Threadpool {
       if (thread.joinable()) {
         thread.join();
       }
-    }
-  }
-
-  void detach_threads() {
-    for (auto &thread : threads) {
-      thread.detach();
     }
   }
 
@@ -102,6 +92,12 @@ class Threadpool {
   submit_contract(F &&f) {
     typedef typename std::result_of<F()>::type R;
     return submit_helper(std::function<R()>(std::forward<F>(f)));
+  }
+
+  void detach_threads() {
+    for (auto &thread : threads) {
+      thread.detach();
+    }
   }
 
   void wait_for_all_jobs() {
@@ -181,10 +177,6 @@ class Threadpool {
   const int num_threads; // Number of threads running in this Threadpool
 };
 
-void detach_threads() {
-  Singleton<Threadpool>::instance().detach_threads();
-}
-
 // Use submit_task() for tasks that need as little overhead as possible
 template <typename F, typename... Args>
 void submit_task(F &&f, Args &&... args) {
@@ -212,12 +204,10 @@ submit_contract(F &&f) {
   return Singleton<Threadpool>::instance().submit_contract(std::forward<F>(f));
 }
 
-void wait_for_all_jobs() {
-  Singleton<Threadpool>::instance().wait_for_all_jobs();
-}
+void detach_threads();
 
-bool all_jobs_complete() {
-  return Singleton<Threadpool>::instance().all_jobs_complete();
-}
+void wait_for_all_jobs();
+
+bool all_jobs_complete();
 
 #endif 
