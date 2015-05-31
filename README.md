@@ -8,12 +8,12 @@ The Threadpool class can be instantiated and used as an object.
 
 To create a threadpool with std::thread::hardware::concurrency() many threads:
 
-    Threadpool tp;
+    Threadpool::Pool tp;
 
 To create a threadpool and specify the number of threads to run:
 
     int num_threads = 4;
-    Threadpool tp(num_threads);
+    Threadpool::Pool tp(num_threads);
 
 ### Submitting a simple job
 
@@ -54,8 +54,8 @@ that has std::thread::hardware::concurrency() many threads.
         std::cout << "Hello" << std::endl;
     }
     ...
-    submit_task(print_hello);
-    wait_for_all_jobs();
+    Threadpool::submit_task(print_hello);
+    Threadpool::wait_for_all_jobs();
 
 ### Submitting a job with arguments
 
@@ -63,8 +63,8 @@ that has std::thread::hardware::concurrency() many threads.
         std::cout << s1 << " " << i << " " << s3 << std::endl;
     }
     ...
-    submit_task(print_arguments, "Hello", 42, "world");
-    wait_for_all_jobs();
+    Threadpool::submit_task(print_arguments, "Hello", 42, "world");
+    Threadpool::wait_for_all_jobs();
 
 ### Submitting a job with a future
 
@@ -72,6 +72,6 @@ that has std::thread::hardware::concurrency() many threads.
         return a + b;
     }
     ...
-    auto f = submit_contract(add_two, 10, 5);
-    assert(f.get() == 15);
+    auto f = Threadpool::submit_contract(add_two, 10, 5);
+    Threadpool::assert(f.get() == 15);
     

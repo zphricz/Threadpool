@@ -3,6 +3,8 @@
 #include <atomic>
 #include <vector>
 #include <utility>
+#include <atomic>
+#include <random>
 
 #include "Threadpool.h"
 
@@ -18,7 +20,7 @@ void hello() {
 }
 
 class Tester {
-  Threadpool tp;
+  Threadpool::Pool tp;
   mutex m2;
 
   void run_once() {
@@ -75,15 +77,21 @@ vector<int> vec_func(int lim) {
   return v;
 }
 
+void num_threads_tester() {
+  static int i = 0;
+  lock_guard<mutex> l(m);
+  std::cout << "NUM_THREADS: " << i++ << std::endl;
+}
+
 int main() {
-  Threadpool tp;
-#if 1
+  Threadpool::Pool tp;
+#if 0
   {
     auto f1 = tp.submit_contract(add_tester, 54, 12);
     cout << f1.get() << endl;
   }
 #endif
-#if 1
+#if 0
   {
     cout << "ACTUAL SWAP" << endl;
     {
@@ -106,7 +114,7 @@ int main() {
   }
 #endif
 
-#if 1
+#if 0
 #define lim 1000
   std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 
@@ -129,7 +137,7 @@ int main() {
   std::cout << "DURATION: " << time << endl;
 #endif
 
-#if 1
+#if 0
   for (int i = 0; i < 100000; ++i) {
     tp.submit_task(hello);
   }
@@ -146,17 +154,32 @@ int main() {
   tp.wait_for_all_jobs();
 #endif
 
-#if 1
+#if 0
   for (int i = 0; i < 100000; ++i) {
-    submit_task(hello);
+    Threadpool::submit_task(hello);
   }
-  wait_for_all_jobs();
+  Threadpool::wait_for_all_jobs();
 
   for (int i = 0; i < 1000; ++i) {
     for (int j = 0; j < 1000; ++j) {
-      auto t = submit_contract(add_tester, i, j);
+      auto t = Threadpool::submit_contract(add_tester, i, j);
     }
   }
-  wait_for_all_jobs();
+  Threadpool::wait_for_all_jobs();
+#endif
+
+#if 1
+  {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dis(1, 10);
+    for (int i = 0; i < 10000; ++i) {
+      Threadpool::submit_task(num_threads_tester);
+      if (i % 100 == 0) {
+        Threadpool::set_num_threads(dis(gen));
+      }
+    }
+    Threadpool::wait_for_all_jobs();
+  }
 #endif
 }
