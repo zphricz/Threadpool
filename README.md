@@ -74,4 +74,8 @@ that has std::thread::hardware::concurrency() many threads.
     ...
     auto f = Threadpool::submit_contract(add_two, 10, 5);
     Threadpool::assert(f.get() == 15);
+
+## Authors
+
+Zack Hricz
     

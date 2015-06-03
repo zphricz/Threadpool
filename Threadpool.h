@@ -220,15 +220,25 @@ namespace Threadpool {
     std::vector<std::thread> threads;
   };
 
-  void set_num_threads(int new_num_threads);
+  inline void set_num_threads(int new_num_threads) {
+    Singleton<Pool>::instance().set_num_threads(new_num_threads);
+  }
 
-  int get_num_threads();
+  inline int get_num_threads() {
+    return Singleton<Pool>::instance().get_num_threads();
+  }
 
-  void detach_threads();
+  inline void detach_threads() {
+    Singleton<Pool>::instance().detach_threads();
+  }
 
-  void wait_for_all_jobs();
+  inline void wait_for_all_jobs() {
+    Singleton<Pool>::instance().wait_for_all_jobs();
+  }
 
-  bool all_jobs_complete();
+  inline bool all_jobs_complete() {
+    return Singleton<Pool>::instance().all_jobs_complete();
+  }
 
   // Use submit_task() for tasks that need as little overhead as possible
   template <typename F, typename... Args>
