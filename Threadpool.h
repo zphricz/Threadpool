@@ -242,27 +242,27 @@ namespace Threadpool {
 
   // Use submit_task() for tasks that need as little overhead as possible
   template <typename F, typename... Args>
-  void submit_task(F &&f, Args &&... args) {
+  inline void submit_task(F &&f, Args &&... args) {
     Singleton<Pool>::instance().submit_task(std::forward<F>(f),
                                             std::forward<Args>(args)...);
   }
 
   template <typename F>
-  void submit_task(F &&f) {
+  inline void submit_task(F &&f) {
     Singleton<Pool>::instance().submit_task(std::forward<F>(f));
   }
 
   // submit_contract() has more overhead than submit_task(), but also provides
   // a future as a return
   template <typename F, typename... Args>
-  std::future<typename std::result_of<F(Args...)>::type>
+  inline std::future<typename std::result_of<F(Args...)>::type>
   submit_contract(F &&f, Args &&... args) {
     return Singleton<Pool>::instance()
       .submit_contract(std::forward<F>(f), std::forward<Args>(args)...);
   }
 
   template <typename F>
-  std::future<typename std::result_of<F()>::type>
+  inline std::future<typename std::result_of<F()>::type>
   submit_contract(F &&f) {
     return Singleton<Pool>::instance().submit_contract(std::forward<F>(f));
   }
