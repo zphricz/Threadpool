@@ -9,8 +9,6 @@
 #include <functional>
 #include <future>
 
-#include "Singleton.h"
-
 namespace Threadpool {
   /*
    * This is an implementation of a simple threadpool. You can specify the
@@ -48,7 +46,6 @@ namespace Threadpool {
       start_threads();
     }
 
-    Pool(Pool &other) = delete;
     Pool(const Pool &other) = delete;
     Pool(Pool &&other) = delete;
    
@@ -139,26 +136,32 @@ namespace Threadpool {
     private:
     template <typename R>
     std::future<R> submit_helper(std::function<R()> &&func) {
-      auto p = std::make_shared<std::promise<R>>();
+      auto p = new std::promise<R>();
+      auto f = p->get_future();
       {
         std::lock_guard<std::mutex> lk(m);
-        job_queue.emplace_back([p, func] { p->set_value(func()); });
-      }
-      signal_threads.notify_one();
-      return p->get_future();
-    }
-
-    std::future<void> submit_helper(std::function<void()> &&func) {
-      auto p = std::make_shared<std::promise<void>>();
-      {
-        std::lock_guard<std::mutex> lk(m);
-        job_queue.emplace_back([p, func] {
-          func();
-          p->set_value();
+        job_queue.emplace_back([p, func = std::move(func)] {
+          p->set_value(func());
+          delete p;
         });
       }
       signal_threads.notify_one();
-      return p->get_future();
+      return std::move(f);
+    }
+
+    std::future<void> submit_helper(std::function<void()> &&func) {
+      auto p = new std::promise<void>();
+      auto f = p->get_future();
+      {
+        std::lock_guard<std::mutex> lk(m);
+        job_queue.emplace_back([p, func = std::move(func)] {
+          func();
+          p->set_value();
+          delete p;
+        });
+      }
+      signal_threads.notify_one();
+      return std::move(f);
     }
 
     void start_threads() {
@@ -220,36 +223,41 @@ namespace Threadpool {
     std::vector<std::thread> threads;
   };
 
+  inline Pool& instance() {
+    static Pool p;
+    return p;
+  }
+
   inline void set_num_threads(int new_num_threads) {
-    Singleton<Pool>::instance().set_num_threads(new_num_threads);
+    instance().set_num_threads(new_num_threads);
   }
 
   inline int get_num_threads() {
-    return Singleton<Pool>::instance().get_num_threads();
+    return instance().get_num_threads();
   }
 
   inline void detach_threads() {
-    Singleton<Pool>::instance().detach_threads();
+    instance().detach_threads();
   }
 
   inline void wait_for_all_jobs() {
-    Singleton<Pool>::instance().wait_for_all_jobs();
+    instance().wait_for_all_jobs();
   }
 
   inline bool all_jobs_complete() {
-    return Singleton<Pool>::instance().all_jobs_complete();
+    return instance().all_jobs_complete();
   }
 
   // Use submit_task() for tasks that need as little overhead as possible
   template <typename F, typename... Args>
   inline void submit_task(F &&f, Args &&... args) {
-    Singleton<Pool>::instance().submit_task(std::forward<F>(f),
+    instance().submit_task(std::forward<F>(f),
                                             std::forward<Args>(args)...);
   }
 
   template <typename F>
   inline void submit_task(F &&f) {
-    Singleton<Pool>::instance().submit_task(std::forward<F>(f));
+    instance().submit_task(std::forward<F>(f));
   }
 
   // submit_contract() has more overhead than submit_task(), but also provides
@@ -257,14 +265,14 @@ namespace Threadpool {
   template <typename F, typename... Args>
   inline std::future<typename std::result_of<F(Args...)>::type>
   submit_contract(F &&f, Args &&... args) {
-    return Singleton<Pool>::instance()
+    return instance()
       .submit_contract(std::forward<F>(f), std::forward<Args>(args)...);
   }
 
   template <typename F>
   inline std::future<typename std::result_of<F()>::type>
   submit_contract(F &&f) {
-    return Singleton<Pool>::instance().submit_contract(std::forward<F>(f));
+    return instance().submit_contract(std::forward<F>(f));
   }
 }
 
