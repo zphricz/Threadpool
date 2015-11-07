@@ -13,73 +13,75 @@ using namespace std;
 mutex m;
 
 void hello() {
-    static thread_local int i = 0;
-    lock_guard<mutex> l(m);
-    cout << "Hello: " << i << endl;
-    i++;
+  static thread_local int i = 0;
+  lock_guard<mutex> l(m);
+  cout << "Hello: " << i << endl;
+  i++;
 }
 
 class Tester {
-    Threadpool::Pool tp;
-    mutex m2;
+  Threadpool::Pool tp;
+  mutex m2;
 
-    void run_once() {
-        static thread_local int i = 0;
-        lock_guard<mutex> l(m2);
-        cout << "Hello: " << i << endl;
-        i++;
+  void run_once() {
+    static thread_local int i = 0;
+    lock_guard<mutex> l(m2);
+    cout << "Hello: " << i << endl;
+    i++;
+  }
+
+public:
+  Tester() {}
+
+  ~Tester() { tp.wait_for_all_jobs(); }
+
+  void test() {
+    for (int i = 0; i < 100000; ++i) {
+      tp.submit_task(&Tester::run_once, this);
     }
-
-  public:
-    Tester() {}
-
-    ~Tester() { tp.wait_for_all_jobs(); }
-
-    void test() {
-        for (int i = 0; i < 100000; ++i) {
-            tp.submit_task(&Tester::run_once, this);
-        }
-    }
+  }
 };
 
 int add_tester(int i, int j) { return i + j; }
 
 template <typename T> void swap2(T &a, T &b) {
-    T temp = a;
-    a = b;
-    b = temp;
+  T temp = a;
+  a = b;
+  b = temp;
 }
 
 void my_swap(int &a, int &b) {
-    int temp = a;
-    a = b;
-    b = temp;
+  int temp = a;
+  a = b;
+  b = temp;
 }
 
 void my_bad_swap(int a, int b) {
-    int temp = a;
-    a = b;
-    b = temp;
+  int temp = a;
+  a = b;
+  b = temp;
 }
 
 vector<int> vec_func(int lim) {
-    vector<int> v;
-    static atomic<int> j(0);
-    for (int i = 0; i < lim; ++i) {
-        v.push_back(j);
-        j++;
-    }
-    return v;
+  vector<int> v;
+  static atomic<int> j(0);
+  for (int i = 0; i < lim; ++i) {
+    v.push_back(j);
+    j++;
+  }
+  return v;
 }
 
 void num_threads_tester() {
-    static int i = 0;
-    lock_guard<mutex> l(m);
-    std::cout << "NUM_THREADS: " << i++ << std::endl;
+  static int i = 0;
+  lock_guard<mutex> l(m);
+  std::cout << "NUM_THREADS: " << i++ << std::endl;
 }
 
 int main() {
-    Threadpool::Pool tp;
+  static int i[4];
+  std::cout << i[4] << std::endl;
+  Threadpool::Pool tp;
 #if 0
   {
     auto f1 = tp.submit_contract(add_tester, 54, 12);
@@ -164,17 +166,17 @@ int main() {
 #endif
 
 #if 1
-    {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<int> dis(1, 10);
-        for (int i = 0; i < 10000; ++i) {
-            Threadpool::submit_task(num_threads_tester);
-            if (i % 100 == 0) {
-                Threadpool::set_num_threads(dis(gen));
-            }
-        }
-        Threadpool::wait_for_all_jobs();
+  {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dis(1, 10);
+    for (int i = 0; i < 10000; ++i) {
+      Threadpool::submit_task(num_threads_tester);
+      if (i % 100 == 0) {
+        Threadpool::set_num_threads(dis(gen));
+      }
     }
+    Threadpool::wait_for_all_jobs();
+  }
 #endif
 }

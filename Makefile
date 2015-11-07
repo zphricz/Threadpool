@@ -1,4 +1,5 @@
 CXXFLAGS = -std=c++14 -Ofast -Wall -Werror
+#CXXFLAGS = -std=c++14 -g -Wall -Werror -fsanitize=address
 OS = $(shell uname -s)
 SRC = $(wildcard *.cpp)
 HEADERS = $(wildcard *.h)
