@@ -146,7 +146,7 @@ namespace Threadpool {
         });
       }
       signal_threads.notify_one();
-      return std::move(f);
+      return f;
     }
 
     std::future<void> submit_helper(std::function<void()> &&func) {
@@ -161,7 +161,7 @@ namespace Threadpool {
         });
       }
       signal_threads.notify_one();
-      return std::move(f);
+      return f;
     }
 
     void start_threads() {
