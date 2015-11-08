@@ -34,16 +34,16 @@ namespace Threadpool {
 class Pool {
 public:
   explicit Pool()
-      : running_threads(0), num_threads(std::thread::hardware_concurrency()) {
-    start_threads();
+      : running_threads(0) {
+    start_threads(std::thread::hardware_concurrency());
   }
 
   explicit Pool(int num_threads)
-      : running_threads(0), num_threads(num_threads) {
+      : running_threads(0) {
     if (num_threads <= 0) {
       num_threads = 1;
     }
-    start_threads();
+    start_threads(num_threads);
   }
 
   Pool(const Pool &other) = delete;
@@ -60,16 +60,15 @@ public:
     if (new_num_threads <= 0) {
       new_num_threads = 1;
     }
-    if (new_num_threads != num_threads) {
+    if (new_num_threads != threads.size()) {
       reap_threads();
       threads.clear();
       threads.shrink_to_fit();
-      num_threads = new_num_threads;
-      start_threads();
+      start_threads(new_num_threads);
     }
   }
 
-  int get_num_threads() { return num_threads; }
+  int get_num_threads() { return threads.size(); }
 
   void detach_threads() {
     for (auto &thread : threads) {
@@ -123,7 +122,7 @@ public:
   }
 
 private:
-  void start_threads() {
+  void start_threads(int num_threads) {
     running = true;
     threads.reserve(num_threads);
     for (int i = 0; i < num_threads; i++) {
@@ -174,7 +173,6 @@ private:
   std::deque<std::function<void()>> job_queue;
   int running_threads; // Number of threads performing jobs
   bool running;
-  int num_threads; // Number of threads running in this Threadpool
   std::condition_variable signal_threads; // Used to wake up threads
   std::condition_variable signal_main;    // Used to wake up main
   std::vector<std::thread> threads;
@@ -203,10 +201,6 @@ inline void submit_task(F &&f, Args &&... args) {
   instance().submit_task(std::forward<F>(f), std::forward<Args>(args)...);
 }
 
-template <typename F> inline void submit_task(F &&f) {
-  instance().submit_task(std::forward<F>(f));
-}
-
 // submit_contract() has more overhead than submit_task(), but also provides
 // a future as a return
 template <typename F, typename... Args>
@@ -214,11 +208,6 @@ inline std::future<typename std::result_of<F(Args...)>::type>
 submit_contract(F &&f, Args &&... args) {
   return instance().submit_contract(std::forward<F>(f),
                                     std::forward<Args>(args)...);
-}
-
-template <typename F>
-inline std::future<typename std::result_of<F()>::type> submit_contract(F &&f) {
-  return instance().submit_contract(std::forward<F>(f));
 }
 }
 
