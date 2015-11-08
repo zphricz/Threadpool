@@ -79,8 +79,6 @@ void num_threads_tester() {
 }
 
 int main() {
-  static int i[4];
-  std::cout << i[4] << std::endl;
   Threadpool::Pool tp;
 #if 0
   {
