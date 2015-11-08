@@ -80,13 +80,13 @@ void num_threads_tester() {
 
 int main() {
   Threadpool::Pool tp;
-#if 0
+#if 1
   {
     auto f1 = tp.submit_contract(add_tester, 54, 12);
     cout << f1.get() << endl;
   }
 #endif
-#if 0
+#if 1
   {
     cout << "ACTUAL SWAP" << endl;
     {
@@ -109,7 +109,7 @@ int main() {
   }
 #endif
 
-#if 0
+#if 1
 #define lim 1000
   std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 
@@ -132,7 +132,7 @@ int main() {
   std::cout << "DURATION: " << time << endl;
 #endif
 
-#if 0
+#if 1
   for (int i = 0; i < 100000; ++i) {
     tp.submit_task(hello);
   }
@@ -149,7 +149,7 @@ int main() {
   tp.wait_for_all_jobs();
 #endif
 
-#if 0
+#if 1
   for (int i = 0; i < 100000; ++i) {
     Threadpool::submit_task(hello);
   }

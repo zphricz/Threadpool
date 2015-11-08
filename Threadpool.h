@@ -25,10 +25,6 @@ namespace Threadpool {
  *     needs to be wrapped in std::ref. However, the code will still compile
  *     if you don't wrap in std::ref. It will just behave incorrectly at
  *     runtime. Fix this.
- *   - submit_contract does not work for jobs that are templated with clang
- *     (e.g. T add_two_of_generic_type<T>(T arg1, T arg2). Fix this?
- *   - submit_task does not work for jobs that don't return void with clang.
- *     Fix this?
  *   - Implement thread-local queues and job-stealing?
  */
 class Pool {
