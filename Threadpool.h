@@ -103,15 +103,11 @@ public:
   std::future<typename std::result_of<F(Args...)>::type>
   submit_contract(F &&f, Args &&... args) {
     typedef typename std::result_of<F(Args...)>::type R;
-    auto task = new std::packaged_task<R()>(
-        std::bind(std::forward<F>(f), std::forward<Args>(args)...));
-    auto fut = task->get_future();
+    std::packaged_task<R()> task(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+    auto fut = task.get_future();
     {
       std::lock_guard<std::mutex> lk(m);
-      job_queue.emplace_back([task] {
-        (*task)();
-        delete task;
-      });
+      job_queue.emplace_back(std::move(task));
     }
     signal_threads.notify_one();
     return fut;
@@ -141,7 +137,7 @@ private:
   }
 
   void thread_loop() {
-    std::function<void()> job;
+    std::packaged_task<void()> job;
     {
       std::lock_guard<std::mutex> lk(m);
       running_threads++;
@@ -166,7 +162,7 @@ private:
   }
 
   std::mutex m;
-  std::deque<std::function<void()>> job_queue;
+  std::deque<std::packaged_task<void()>> job_queue;
   int running_threads; // Number of threads performing jobs
   bool running;
   std::condition_variable signal_threads; // Used to wake up threads
